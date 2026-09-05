@@ -3,19 +3,19 @@ PLANS = {
         "name": "AI Discovery",
         "price_inr": 49.0,
         "duration_days": 30,
-        "max_match_score": 50,
+        "max_match_score": 49,
         "features": [
             "AI profile matching",
-            "Access matches up to 50% compatibility",
+            "Access matches up to 49% compatibility",
             "Basic compatibility insights",
             "30 days validity",
         ],
     },
     "AI_SMART": {
         "name": "AI Smart Match",
-        "price_inr": 199.0,
+        "price_inr": 149.0,
         "duration_days": 30,
-        "max_match_score": 75,
+        "max_match_score": 74,
         "features": [
             "Everything in AI Discovery",
             "Access matches up to 75% compatibility",
@@ -55,3 +55,28 @@ def get_all_plans() -> list[dict]:
         }
         for code, plan in PLANS.items()
     ]
+
+
+def get_plan_for_score(score: int | None) -> str:
+    """Map an integer match score (0-100) to a plan code.
+
+    Rules:
+      - score is None or < 50 -> AI_DISCOVERY
+      - 50 <= score <= 74 -> AI_SMART
+      - score >= 75 -> AI_PREMIUM
+
+    Returns plan code string.
+    """
+    try:
+        if score is None:
+            s = 0
+        else:
+            s = int(score)
+    except (TypeError, ValueError):
+        s = 0
+
+    if s < 50:
+        return "AI_DISCOVERY"
+    if 50 <= s <= 74:
+        return "AI_SMART"
+    return "AI_PREMIUM"

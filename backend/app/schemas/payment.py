@@ -13,14 +13,20 @@ class PlanResponse(BaseModel):
 
 
 class InitiatePaymentRequest(BaseModel):
-    plan_code: str = Field(
-        min_length=1,
+    plan_code: str | None = Field(
+        default=None,
         max_length=40,
     )
 
     coupon_code: str | None = Field(
         default=None,
         max_length=50,
+    )
+
+    match_score: int | None = Field(
+        default=None,
+        ge=0,
+        le=100,
     )
 
 
