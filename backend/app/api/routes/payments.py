@@ -31,6 +31,7 @@ from app.services.payment import (
 from app.services.plans import (
     PLANS,
     get_plan,
+    get_plan_for_score,
 )
 
 
@@ -330,11 +331,20 @@ def initiate_payment(
     db: Session = Depends(get_db),
 ):
 
-    plan_code = (
-        data.plan_code
-        .strip()
-        .upper()
-    )
+    # Determine plan_code either from explicit plan_code or from match_score
+    if data.plan_code:
+        plan_code = (
+            data.plan_code
+            .strip()
+            .upper()
+        )
+    else:
+        if data.match_score is None:
+            raise HTTPException(
+                status_code=400,
+                detail="Either plan_code or match_score must be provided.",
+            )
+        plan_code = get_plan_for_score(data.match_score)
 
     plan = get_plan(
         plan_code

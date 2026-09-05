@@ -10,7 +10,10 @@ from app.models.chat import Message
 from app.models.match import Match
 from app.models.profile import Profile
 from app.models.user import User
+from app.models.payment import Subscription
 from app.services.phase5 import create_notification
+from app.services.plans import get_plan_for_score, get_plan
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/chat", tags=["Chat"])
 
@@ -97,6 +100,35 @@ def get_messages(match_id: int, user: User = Depends(get_current_user), db: Sess
 @limiter.limit("60/minute")
 def send_message(request: Request, match_id: int, data: SendMessageRequest, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     match = _get_participant_match(match_id, user.id, db)
+
+    # Determine required plan based on match score
+    required_plan_code = get_plan_for_score(match.score)
+
+    # Check if user has an active subscription for that plan
+    now = datetime.now(timezone.utc)
+    sub = (
+        db.query(Subscription)
+        .filter(
+            Subscription.user_id == user.id,
+            Subscription.plan_code == required_plan_code,
+            Subscription.is_active == True,
+            Subscription.start_date <= now,
+            Subscription.end_date > now,
+        )
+        .first()
+    )
+
+    if not sub:
+        plan = get_plan(required_plan_code) or {}
+        raise HTTPException(
+            status_code=402,
+            detail={
+                "message": "Subscription required to start chat for this match.",
+                "required_plan": required_plan_code,
+                "price_inr": plan.get("price_inr"),
+            },
+        )
+
     message = Message(match_id=match.id, sender_id=user.id, content=data.content.strip())
     db.add(message)
     create_notification(
